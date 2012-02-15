@@ -8,7 +8,7 @@
 /**
  * Required minimum Views RSS module build.
  */
-define('VIEWS_RSS_ITUNES_REQUIRED_BUILD', '7.x-2.x-dev-20120212');
+define('VIEWS_RSS_ITUNES_REQUIRED_BUILD', '7.x-2.x-dev-20120215');
 
 /**
  * Implements hook_requirements().

@@ -114,7 +114,6 @@ function views_rss_itunes_views_rss_item_elements() {
   );
   $elements['itunes:duration'] = array(
     'description' => t('The content of this tag is shown in the Time column in iTunes.'),
-    'theme' => FALSE,
     'help' => 'http://www.apple.com/itunes/podcasts/specs.html#duration',
   );
   $elements['itunes:keywords'] = array(
@@ -124,7 +123,6 @@ function views_rss_itunes_views_rss_item_elements() {
   );
   $elements['itunes:image'] = array(
     'description' => t('This tag specifies the artwork for your podcast. iTunes prefers square .jpg images that are at least 600 x 600 pixels. iTunes supports images in JPEG and PNG formats with a RGB color space (CMYK is not supported). If the tag is not present, iTunes will use the contents of the RSS &lt;image&gt; tag.'),
-    'theme' => FALSE,
     'help' => 'http://www.apple.com/itunes/podcasts/specs.html#image',
   );
   $elements['itunes:author'] = array(
@@ -214,28 +212,51 @@ function views_rss_itunes_field_formatter_settings_summary($field, $instance, $v
 
 /**
  * Implements hook_field_formatter_view().
+ *
+ * This is a dirty trick here. Essentially, we do not want to call a theme
+ * function from here, as it should be called from within a view (amongst
+ * other to have $view object in $variables). Therefore here we want to
+ * return value only, hence use of array('#markup' => $value). However,
+ * in some cases it won't be just a simple string value to return,
+ * sometimes we'd want to return an array (for example value with
+ * additional arguments) - hence the need to serialize it (plus add
+ * "serialized" string at the beginning so that our field preprocess
+ * function template_preprocess_views_view_views_rss_field() is able
+ * to recognize it as serialized array and treat accordingly.
+ *
+ * Any better ideas?
  */
 function views_rss_itunes_field_formatter_view($entity_type, $entity, $field, $instance, $langcode, $items, $display) {
   $element = array();
   foreach ($items as $delta => $item) {
-    $element[$delta] = array(
-      '#theme' => 'views_view_views_rss_field',
-      '#element' => $display['type'],
-    );
-    switch ($element[$delta]['#element']) {
+    // Inside a view item may contain NULL data. In that case, just return.
+    if (empty($item['fid'])) {
+      unset($items[$delta]);
+      continue;
+    }
+    switch ($display['type']) {
       case 'itunes:duration':
         $file_info = views_rss_itunes_get_file_info($item['uri']);
-        $element[$delta]['#value'] = $file_info['playtime_string'];
+        if (isset($file_info['playtime_string'])) {
+          $element[$delta] = array('#markup' => $file_info['playtime_string']);
+        }
         break;
       case 'itunes:image':
-        if ($field['type'] == 'image') {
-          if (!empty($display['settings']['image_style'])) {
-            $element[$delta]['#arguments']['href'] = image_style_url($display['settings']['image_style'], $item['uri']);
-          }
-          else {
-            $element[$delta]['#arguments']['href'] = file_create_url($item['uri']);
+        $uri = file_create_url($item['uri']);
+        if (!empty($display['settings']['image_style']) && $image_style = image_style_load($display['settings']['image_style'])) {
+          // Get full image URI based on provided image style.
+          $uri = image_style_url($display['settings']['image_style'], $item['uri']);
+          // Make sure that image style file has already been created.
+          $path = image_style_path($display['settings']['image_style'], $item['uri']);
+          if (!file_exists(drupal_realpath($path))) {
+            image_style_create_derivative($image_style, $item['uri'], $path);
           }
         }
+        $element[$delta] = array('#markup' => 'serialized:' . serialize(array(
+          'arguments' => array(
+            'href' => $uri,
+          ),
+        )));
         break;
     }
   }
