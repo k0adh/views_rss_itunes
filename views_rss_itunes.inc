@@ -45,6 +45,19 @@ function views_rss_itunes_preprocess_channel_category(&$variables) {
 }
 
 /**
+ * Preprocess function for channel <itunes:category> element.
+ */
+function views_rss_itunes_preprocess_channel_image(&$variables) {
+  if (!empty($variables['value'])) {
+    $variables['value'] = array(
+      'arguments' => array(
+        'href' => file_create_url($variables['value']),
+      ),
+    );
+  }
+}
+
+/**
  * Preprocess function for channel <itunes:owner> element.
  */
 function views_rss_itunes_preprocess_channel_owner(&$variables) {

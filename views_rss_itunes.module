@@ -54,7 +54,8 @@ function views_rss_itunes_views_rss_channel_elements() {
     'help' => 'http://www.apple.com/itunes/podcasts/specs.html#keywords',
   );
   $elements['itunes:image'] = array(
-    'description' => t('This tag specifies the artwork for your podcast. iTunes prefers square .jpg images that are at least 600 x 600 pixels. iTunes supports images in JPEG and PNG formats with a RGB color space (CMYK is not supported). If the tag is not present, iTunes will use the contents of the RSS &lt;image&gt; tag.'),
+    'description' => t('Path to the image to be used as the artwork for your podcast, for example <em>sites/default/files/AllAboutEverything.jpg</em>. iTunes prefers square .jpg images that are at least 600 x 600 pixels. iTunes supports images in JPEG and PNG formats with a RGB color space (CMYK is not supported). If the tag is not present, iTunes will use the contents of the RSS &lt;image&gt; tag.'),
+    'preprocess functions' => array('views_rss_itunes_preprocess_channel_image'),
     'help' => 'http://www.apple.com/itunes/podcasts/specs.html#image',
   );
   $elements['itunes:author'] = array(
