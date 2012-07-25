@@ -80,19 +80,28 @@ function views_rss_itunes_field_formatter_settings_summary($field, $instance, $v
  */
 function views_rss_itunes_field_formatter_view($entity_type, $entity, $field, $instance, $langcode, $items, $display) {
   $element = array();
+  
   foreach ($items as $delta => $item) {
+    
     // Inside a view item may contain NULL data. In that case, just return.
     if (empty($item['fid'])) {
       unset($items[$delta]);
       continue;
     }
+
+    $rss_element = array(
+      'key' => $display['type'],
+    );
+
     switch ($display['type']) {
+
       case 'itunes:duration':
         $file_info = views_rss_itunes_get_file_info($item['uri']);
         if (isset($file_info['playtime_string'])) {
-          $element[$delta] = array('#markup' => $file_info['playtime_string']);
+          $rss_element['value'] = $file_info['playtime_string'];
         }
         break;
+
       case 'itunes:image':
         $uri = file_create_url($item['uri']);
         if (!empty($display['settings']['image_style']) && $image_style = image_style_load($display['settings']['image_style'])) {
@@ -104,13 +113,21 @@ function views_rss_itunes_field_formatter_view($entity_type, $entity, $field, $i
             image_style_create_derivative($image_style, $item['uri'], $path);
           }
         }
-        $element[$delta] = array('#markup' => 'serialized:' . serialize(array(
-          'arguments' => array(
-            'href' => $uri,
-          ),
-        )));
+        $rss_element['attributes'] = array(
+          'href' => $uri,
+        );
         break;
+
     }
+
+    $element[$delta] = array(
+      '#item' => $item,
+      '#markup' => format_xml_elements(array($rss_element)),
+      '#rss_element' => $rss_element,
+      '#settings' => $display['settings'],
+    );
+
   }
+  
   return $element;
 }
