@@ -1,7 +1,7 @@
 name = "Views RSS: iTunes Elements"
 description = "Provides iTunes element set for Views RSS module"
 package = Views
-dependencies[] = views_rss
+dependencies[] = views_rss (>= 7.x-2.0-rc1)
 dependencies[] = views_rss_core
 dependencies[] = getid3
 core = "7.x"
