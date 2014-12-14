@@ -5,103 +5,116 @@
  * (Un)installation functions for Views RSS: iTunes Elements module.
  */
 
+use Drupal\taxonomy\Entity\Vocabulary;
+use Drupal\Core\Url;
+use Drupal\Component\Utility\String;
+
+/**
+ * Implements hook_requirements().
+ */
+function views_rss_itunes_requirements($phase) {
+  $requirements = array();
+
+  if ($phase == 'runtime') {
+    // Test getID3 version
+    $requirements['getid3']['title'] = t('ID3 library');
+
+    $library = libraries_load('getID3');
+    if (!empty($library['loaded'])) {
+      $requirements['getid3']['value'] = String::checkPlain($library['version']);
+
+      // Check if demos directory exists.
+      $getid3_demos_path = libraries_get_path('getID3') . '/demos';
+      if (file_exists($getid3_demos_path)) {
+        $requirements['getid3']['description'] = t("Your getID3 library is insecure! The demos distributed with getID3 contains code which creates a huge security hole. Remove the demos directory (%path) from beneath library's directory.", array('%path' => realpath($getid3_demos_path)));
+        $requirements['getid3']['severity'] = REQUIREMENT_ERROR;
+      }
+    }
+    // getID3 library not found or wrong version.
+    else {
+      $requirements['getid3']['value'] = t('Not found or wrong version');
+      $requirements['getid3']['description'] = t('You must download <a href="@getid3">getID3()</a> to %getid3dir directory. You might use <em>drush getid3-download</em> command to do that.', array(
+        '@getid3' => 'http://www.getid3.org',
+        '%getid3dir' => 'libraries/getID3',
+      ));
+      $requirements['getid3']['severity'] = REQUIREMENT_ERROR;
+    }
+  }
+
+  return $requirements;
+}
+
 /**
  * Implements hook_install().
  */
 function views_rss_itunes_install() {
-
   // Make sure that "iTunes Category" vocabulary does not exist
   // (it could still be there from previous module installations).
-  $exists = FALSE;
-  $vocabularies = taxonomy_get_vocabularies();
-  foreach ($vocabularies as $vocabulary) {
-    if ($vocabulary->machine_name == 'views_rss_itunes_category') {
-      variable_set('views_rss_itunes_category_vid', $vocabulary->vid);
-      $exists = TRUE;
-    }
-  }
-  if ($exists === FALSE) {
+  if (!Vocabulary::load('views_rss_itunes_category')) {
 
     // Create "iTunes Category" vocabulary.
-    $vocabulary = (object) array(
+    $vocabulary = entity_create('taxonomy_vocabulary', array(
       'name' => 'iTunes Category',
-      'machine_name' => 'views_rss_itunes_category',
-      'module' => 'views_rss_itunes',
-    );
-    $ret = taxonomy_vocabulary_save($vocabulary);
-    variable_set('views_rss_itunes_category_vid', $vocabulary->vid);
+      'vid' => 'views_rss_itunes_category',
+    ));
+    $vocabulary->save();
 
     // Create main iTunes categories as first-level terms.
     $first_level_terms = array(
       'arts' => array(
         'name' => 'Arts',
-        'vid' => $vocabulary->vid,
       ),
       'business' => array(
         'name' => 'Business',
-        'vid' => $vocabulary->vid,
       ),
       'comedy' => array(
         'name' => 'Comedy',
-        'vid' => $vocabulary->vid,
       ),
       'education' => array(
         'name' => 'Education',
-        'vid' => $vocabulary->vid,
       ),
       'games_and_hobbies' => array(
         'name' => 'Games & Hobbies',
-        'vid' => $vocabulary->vid,
       ),
       'government_and_organizations' => array(
         'name' => 'Government & Organizations',
-        'vid' => $vocabulary->vid,
       ),
       'health' => array(
         'name' => 'Health',
-        'vid' => $vocabulary->vid,
       ),
       'kids_and_family' => array(
         'name' => 'Kids & Family',
-        'vid' => $vocabulary->vid,
       ),
       'music' => array(
         'name' => 'Music',
-        'vid' => $vocabulary->vid,
       ),
       'news_and_politics' => array(
         'name' => 'News & Politics',
-        'vid' => $vocabulary->vid,
       ),
       'religion_and_spirituality' => array(
         'name' => 'Religion & Spirituality',
-        'vid' => $vocabulary->vid,
       ),
       'science_and_medicine' => array(
         'name' => 'Science & Medicine',
-        'vid' => $vocabulary->vid,
       ),
       'society_and_culture' => array(
         'name' => 'Society & Culture',
-        'vid' => $vocabulary->vid,
       ),
       'sports_and_recreation' => array(
         'name' => 'Sports & Recreation',
-        'vid' => $vocabulary->vid,
       ),
       'technology' => array(
         'name' => 'Technology',
-        'vid' => $vocabulary->vid,
       ),
       'tv_and_film' => array(
         'name' => 'TV & Film',
-        'vid' => $vocabulary->vid,
       ),
     );
     foreach ($first_level_terms as $key => $term_data) {
-      $term = (object) $term_data;
-      $ret = taxonomy_term_save($term);
-      $first_level_terms[$key] = (array) $term;
+      $term_data['vid'] = $vocabulary->id();
+      $term = entity_create('taxonomy_term', $term_data);
+      $term->save();
+      $first_level_terms[$key] = $term;
     }
 
     // Create iTunes subcategories as second-level terms.
@@ -183,28 +196,28 @@ function views_rss_itunes_install() {
     );
     foreach ($second_level_terms as $key1 => $terms) {
       foreach ($terms as $key2 => $term_data) {
-        $term_data['parent'] = $first_level_terms[$key1]['tid'];
-        $term_data['vid'] = $vocabulary->vid;
-        $term = (object) $term_data;
-        $ret = taxonomy_term_save($term);
-        $second_level_terms[$key1][$key2] = (array) $term;
+        $term_data['vid'] = $vocabulary->id();
+        $term_data['parent'] = $first_level_terms[$key1]->id();
+        $term = entity_create('taxonomy_term', $term_data);
+        $term->save();
+        $second_level_terms[$key1][$key2] = $term;
       }
     }
   }
 
   // Clear Views cache to force-rebuild namespaces and feed elements.
-  cache_clear_all('views_rss:', 'cache_views', TRUE);
+  \Drupal::cache('data')->invalidateTags(array('views_rss'));
 }
 
 /**
  * Implements hook_uninstall().
  */
 function views_rss_itunes_uninstall() {
-  if (db_table_exists('cache_views')) {
-    cache_clear_all('views_rss:', 'cache_views', TRUE);
+  \Drupal::cache('data')->invalidateTags(array('views_rss'));
+
+  if ($vocabulary = Vocabulary::load('views_rss_itunes_category')) {
+    drupal_set_message(t('Please note that taxonomy vocabulary "iTunes Category" has not been deleted, as it could still be used by site\'s content. If you don\'t need it anymore, please <a href="!vocabulary_url">delete it manually</a>.', array(
+      '!vocabulary_url' => Url::fromRoute('entity.taxonomy_vocabulary.edit_form', ['taxonomy_vocabulary' => $vocabulary->id()]),
+    )));
   }
-  variable_del('views_rss_itunes_category_vid');
-  drupal_set_message(t('Please note that taxonomy vocabulary "iTunes Category" has not been deleted, as it could still be used by site\'s content. If you don\'t need it anymore, please <a href="!taxonomy_url">delete it manually</a>.', array(
-    '!taxonomy_url' => url('admin/structure/taxonomy/views_rss_itunes_category/edit'),
-  )));
 }

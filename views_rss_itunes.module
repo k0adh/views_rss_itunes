@@ -6,19 +6,33 @@
  */
 
 /**
- * Module installation path.
- */
-define('VIEWS_RSS_ITUNES_PATH', drupal_get_path('module', 'views_rss_itunes'));
-
-/**
- * Include file with field formatters.
- */
-include_once VIEWS_RSS_ITUNES_PATH .'/views_rss_itunes.field.inc';
-
-/**
  * Include file with all preprocess functions.
  */
-include_once VIEWS_RSS_ITUNES_PATH .'/views_rss_itunes.inc';
+include_once drupal_get_path('module', 'views_rss_itunes') .'/views_rss_itunes.inc';
+
+/**
+ * Implements hook_libraries_info().
+ */
+function views_rss_itunes_libraries_info() {
+  $libraries['getID3'] = array(
+    'name' => 'getID3',
+    'vendor url' => 'http://www.getid3.org',
+    'download url' => 'https://sourceforge.net/projects/getid3/files/getID3%28%29%201.x',
+    'path' => 'getID3',
+    'version arguments' => array(
+      'file' => 'getid3/getid3.php',
+      'pattern' => "/const VERSION\s+=\s+'([0-9a-zA-Z\.-]+)'/",
+      'lines' => 150,
+      'cols' => 80,
+    ),
+    'files' => array(
+      'php' => array(
+        'getid3.php',
+      ),
+    ),
+  );
+  return $libraries;
+}
 
 /**
  * Implements hook_views_rss_namespaces().
@@ -37,12 +51,10 @@ function views_rss_itunes_views_rss_namespaces() {
 function views_rss_itunes_views_rss_channel_elements() {
   $elements['itunes:subtitle'] = array(
     'description' => t('The contents of this tag are shown in the Description column in iTunes. The subtitle displays best if it is only a few words long.'),
-    'preprocess functions' => array('views_rss_htmlspecialchars'),
     'help' => 'http://www.apple.com/itunes/podcasts/specs.html#subtitle',
   );
   $elements['itunes:summary'] = array(
     'settings form' => array('#type' => 'textarea', '#rows' => 3),
-    'preprocess functions' => array('views_rss_htmlspecialchars'),
     'description' => t('The contents of this tag are shown in a separate window that appears when the "circled i" in the Description column is clicked. It also appears on the iTunes page for your podcast. This field can be up to 4000 characters. If &lt;itunes:summary&gt; is not included, the contents of the &lt;description&gt; tag are used.'),
     'help' => 'http://www.apple.com/itunes/podcasts/specs.html#summary',
   );
@@ -55,7 +67,6 @@ function views_rss_itunes_views_rss_channel_elements() {
   );
   $elements['itunes:keywords'] = array(
     'description' => t('This tag allows users to search on a maximum of 12 text keywords. Use commas to separate keywords. Not visible in iTunes.'),
-    'preprocess functions' => array('views_rss_htmlspecialchars'),
     'help' => 'http://www.apple.com/itunes/podcasts/specs.html#keywords',
   );
   $elements['itunes:image'] = array(
@@ -65,7 +76,6 @@ function views_rss_itunes_views_rss_channel_elements() {
   );
   $elements['itunes:author'] = array(
     'description' => t('The content of this tag is shown in the Artist column in iTunes. If the tag is not present, iTunes uses the contents of the &lt;author&gt; tag. If &lt;itunes:author&gt; is not present at the feed level, iTunes will use the contents of &lt;managingEditor&gt;.'),
-    'preprocess functions' => array('views_rss_htmlspecialchars'),
     'help' => 'http://www.apple.com/itunes/podcasts/specs.html#author',
   );
   $elements['itunes:explicit'] = array(
@@ -110,30 +120,28 @@ function views_rss_itunes_views_rss_channel_elements() {
 function views_rss_itunes_views_rss_item_elements() {
   $elements['itunes:subtitle'] = array(
     'description' => t('The contents of this tag are shown in the Description column in iTunes. The subtitle displays best if it is only a few words long.'),
-    'preprocess functions' => array('views_rss_htmlspecialchars'),
     'help' => 'http://www.apple.com/itunes/podcasts/specs.html#subtitle',
   );
   $elements['itunes:summary'] = array(
     'description' => t('The contents of this tag are shown in a separate window that appears when the "circled i" in the Description column is clicked. It also appears on the iTunes page for your podcast. This field can be up to 4000 characters. If &lt;itunes:summary&gt; is not included, the contents of the &lt;description&gt; tag are used.'),
-    'preprocess functions' => array('views_rss_htmlspecialchars'),
     'help' => 'http://www.apple.com/itunes/podcasts/specs.html#summary',
   );
   $elements['itunes:duration'] = array(
     'description' => t('The content of this tag is shown in the Time column in iTunes.'),
+    'preprocess functions' => array('views_rss_itunes_preprocess_item_duration'),
     'help' => 'http://www.apple.com/itunes/podcasts/specs.html#duration',
   );
   $elements['itunes:keywords'] = array(
     'description' => t('This tag allows users to search on a maximum of 12 text keywords. Use commas to separate keywords. Not visible in iTunes.'),
-    'preprocess functions' => array('views_rss_htmlspecialchars'),
     'help' => 'http://www.apple.com/itunes/podcasts/specs.html#keywords',
   );
   $elements['itunes:image'] = array(
     'description' => t('This tag specifies the artwork for your podcast. iTunes prefers square .jpg images that are at least 600 x 600 pixels. iTunes supports images in JPEG and PNG formats with a RGB color space (CMYK is not supported). If the tag is not present, iTunes will use the contents of the RSS &lt;image&gt; tag.'),
+    'preprocess functions' => array('views_rss_itunes_preprocess_item_image'),
     'help' => 'http://www.apple.com/itunes/podcasts/specs.html#image',
   );
   $elements['itunes:author'] = array(
     'description' => t('The content of this tag is shown in the Artist column in iTunes. If the tag is not present, iTunes uses the contents of the &lt;author&gt; tag. If &lt;itunes:author&gt; is not present at the feed level, iTunes will use the contents of &lt;managingEditor&gt;.'),
-    'preprocess functions' => array('views_rss_htmlspecialchars'),
     'help' => 'http://www.apple.com/itunes/podcasts/specs.html#author',
   );
   $elements['itunes:isClosedCaptioned'] = array(
