@@ -113,10 +113,11 @@ function views_rss_itunes_get_category_options() {
  */
 function views_rss_itunes_preprocess_item_duration(&$variables) {
   // No raw values = no preprocessing.
-  if (empty($variables['raw'])) {
+  if (empty($variables['raw']['items'])) {
     return;
   }
 
+  // No getID3 library = no possibility to get duration values.
   $library = libraries_load('getID3');
   if (empty($library['loaded'])) {
     return;
@@ -124,7 +125,7 @@ function views_rss_itunes_preprocess_item_duration(&$variables) {
 
   $getID3 = new getID3;
   $variables['elements'] = array();
-  foreach ($variables['raw'] as $item) {
+  foreach ($variables['raw']['items'] as $item) {
     if (!empty($item['rendered']['#file'])) {
       $path = drupal_realpath($item['rendered']['#file']->getFileUri());
       $id3_info = $getID3->analyze($path);
@@ -144,12 +145,12 @@ function views_rss_itunes_preprocess_item_duration(&$variables) {
  */
 function views_rss_itunes_preprocess_item_image(&$variables) {
   // No raw values = no preprocessing.
-  if (empty($variables['raw'])) {
+  if (empty($variables['raw']['items'])) {
     return;
   }
 
   $variables['elements'] = array();
-  foreach ($variables['raw'] as $item) {
+  foreach ($variables['raw']['items'] as $item) {
     // File fields.
     if (!empty($item['rendered']['#file'])) {
       $file = $item['rendered']['#file'];
