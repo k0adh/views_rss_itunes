@@ -117,26 +117,31 @@ function views_rss_itunes_preprocess_item_duration(&$variables) {
     return;
   }
 
-  // No getID3 library = no possibility to get duration values.
-  $library = libraries_load('getID3');
-  if (empty($library['loaded'])) {
-    return;
-  }
+  $getID3 = new getID3();
 
-  $getID3 = new getID3;
   $variables['elements'] = array();
   foreach ($variables['raw']['items'] as $item) {
     if (!empty($item['rendered']['#file'])) {
       $path = drupal_realpath($item['rendered']['#file']->getFileUri());
       $id3_info = $getID3->analyze($path);
-
-      if (!empty($id3_info['playtime_string'])) {
-        $variables['elements'][] = array(
-          'key' => 'itunes:duration',
-          'value' => $id3_info['playtime_string'],
-        );
-      }
     }
+    elseif (!empty($item['rendered']['#markup'])) {
+      // There is a large performance hit to try to use remote files. Use local.
+      _convert_to_local_file($item['rendered']['#markup']);
+
+      $localfile = $item['rendered']['#markup'];
+      // Initialize getID3 engine.
+      $getID3 = new getID3();
+
+      $id3_info = $getID3->analyze($localfile);
+    }
+  }
+
+  if (!empty($id3_info['playtime_string'])) {
+    $variables['elements'][] = array(
+      'key' => 'itunes:duration',
+      'value' => $id3_info['playtime_string'],
+    );
   }
 }
 
@@ -185,4 +190,27 @@ function views_rss_itunes_preprocess_item_image(&$variables) {
 
     $variables['elements'][] = $element;
   }
+}
+
+/**
+ * Convert CDN internal name to external name.
+ */
+function _convert_to_local_file(&$filename) {
+  // If the filename begins with // strip the first section (domain).
+  $url_array = parse_url($filename);
+
+  $filename = $url_array['path'];
+
+
+  $filename = rawurldecode($filename);
+  
+  // Strip /sites/default/files if it exists at the beginning of the filename.
+  // @TODO work with the web/ root instead
+  if (preg_match('/^\/sites\/default\/files\//', $filename)) {
+    $filename = preg_replace('/^\/sites\/default\/files\//', '/', $filename);
+  }
+
+  // Add the base path.
+  $filename = \Drupal::service('file_system')->realpath(file_default_scheme() . "://") . $filename;
+
 }
