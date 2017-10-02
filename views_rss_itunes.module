@@ -11,30 +11,6 @@
 include_once drupal_get_path('module', 'views_rss_itunes') .'/views_rss_itunes.inc';
 
 /**
- * Implements hook_libraries_info().
- */
-function views_rss_itunes_libraries_info() {
-  $libraries['getID3'] = array(
-    'name' => 'getID3',
-    'vendor url' => 'http://www.getid3.org',
-    'download url' => 'https://sourceforge.net/projects/getid3/files/getID3%28%29%201.x',
-    'path' => 'getID3',
-    'version arguments' => array(
-      'file' => 'getid3/getid3.php',
-      'pattern' => "/const VERSION\s+=\s+'([0-9a-zA-Z\.-]+)'/",
-      'lines' => 150,
-      'cols' => 80,
-    ),
-    'files' => array(
-      'php' => array(
-        'getid3.php',
-      ),
-    ),
-  );
-  return $libraries;
-}
-
-/**
  * Implements hook_views_rss_namespaces().
  */
 function views_rss_itunes_views_rss_namespaces() {
