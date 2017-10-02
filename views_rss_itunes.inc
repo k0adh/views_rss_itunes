@@ -23,6 +23,9 @@ function views_rss_itunes_preprocess_channel_category(&$variables) {
     // Try to load parent term objects.
     $parents = \Drupal::entityManager()->getStorage('taxonomy_term')->loadParents($tid);
     // Term has a parent.
+    // TODO revisit the core functionality in Drupal 8.4 for views_rss
+    // https://www.drupal.org/node/2694535
+    // https://www.drupal.org/node/2887146
     if (count($parents)) {
       $parent = array_shift($parents);
       if (!isset($elements[$parent->id()])) {
@@ -33,7 +36,8 @@ function views_rss_itunes_preprocess_channel_category(&$variables) {
           ),
         );
       }
-      $elements[$parent->id()]['value'][$term->id()] = array(
+      //$elements[$parent->id()]['value'][$term->id()] = array(
+      $elements[$term->id()] = array(
         'key' => 'itunes:category',
         'attributes' => array(
           'text' => $term->getName(),
