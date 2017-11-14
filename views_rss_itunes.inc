@@ -29,15 +29,19 @@ function views_rss_itunes_preprocess_channel_category(&$variables) {
     if (count($parents)) {
       $parent = array_shift($parents);
       if (!isset($elements[$parent->id()])) {
-        $elements[$parent->id()] = array(
+        $elements[] = array(
           'key' => 'itunes:category',
           'attributes' => array(
             'text' => $parent->getName(),
           ),
         );
       }
+<<<<<<< Updated upstream
       //$elements[$parent->id()]['value'][$term->id()] = array(
       $elements[$term->id()] = array(
+=======
+      $elements[] = array(
+>>>>>>> Stashed changes
         'key' => 'itunes:category',
         'attributes' => array(
           'text' => $term->getName(),
