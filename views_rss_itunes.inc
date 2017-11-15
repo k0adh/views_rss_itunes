@@ -46,12 +46,14 @@ function views_rss_itunes_preprocess_channel_category(&$variables) {
     }
     // Term has no parent.
     else {
-      $elements[$term->id()] = array(
-        'key' => 'itunes:category',
-        'attributes' => array(
-          'text' => $term->getName(),
-        ),
-      );
+      if (is_object($term)) {
+        $elements[$term->id()] = array(
+          'key' => 'itunes:category',
+          'attributes' => array(
+            'text' => $term->getName(),
+          ),
+        );
+      }
     }
   }
   $variables['elements'] = $elements;
