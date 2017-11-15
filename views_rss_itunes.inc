@@ -36,12 +36,8 @@ function views_rss_itunes_preprocess_channel_category(&$variables) {
           ),
         );
       }
-<<<<<<< Updated upstream
       //$elements[$parent->id()]['value'][$term->id()] = array(
       $elements[$term->id()] = array(
-=======
-      $elements[] = array(
->>>>>>> Stashed changes
         'key' => 'itunes:category',
         'attributes' => array(
           'text' => $term->getName(),
